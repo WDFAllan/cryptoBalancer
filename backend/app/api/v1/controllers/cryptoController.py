@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from app.domain.services.crypto_service import CryptoService
-from app.infrastructure.repositories.crypto_repository import CryptoRepository
+from app.domain.services.cryptoService import CryptoService
+from app.infrastructure.repository.cryptoRepository import CryptoRepository
 
 router = APIRouter()
 service = CryptoService(CryptoRepository())
