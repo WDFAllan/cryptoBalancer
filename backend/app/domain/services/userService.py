@@ -1,5 +1,6 @@
 from app.domain.models.user import User
 from app.domain.port.userPort import IUserPort
+from app.infrastructure.repository.userRepository import UserRepository
 
 
 class UserService:
@@ -10,8 +11,8 @@ class UserService:
     def login_with_google(self, google_data: dict):
         email = google_data.get("email")
         username = google_data.get("name")
-        user = self.userRepo.get_by_email(email)
 
+        user = self.userRepo.get_by_email(email)
         if user:
             return user
 

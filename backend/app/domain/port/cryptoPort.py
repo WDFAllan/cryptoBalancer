@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from app.domain.port.userPort import IUserPort
-
 class ICryptoPort(ABC):
 
     @abstractmethod

@@ -1,10 +1,15 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends
+from sqlalchemy.orm import Session
+
 from app.core.config import oauth
+from app.core.database.database import get_db
 from app.infrastructure.repository.userRepository import UserRepository
 from app.domain.services.userService import UserService
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
+def google_service(db:Session = Depends(get_db)) -> UserService:
+    return UserService(UserRepository(db))
 
 @router.get("/google/login")
 async def google_login(request: Request):
@@ -12,16 +17,16 @@ async def google_login(request: Request):
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @router.get("/google/callback")
-async def google_callback(request: Request):
+async def google_callback(
+        request: Request,
+        userService:UserService = Depends(google_service)
+):
+
     token = await oauth.google.authorize_access_token(request)
-    print(token)
     nonce = request.session.get("nonce") or request.session.get("oidc_nonce")
+    google_data = await oauth.google.parse_id_token(token, nonce)
 
-    google_data = await oauth.google.parse_id_token(token,nonce)
-
-    user_service = UserService(UserRepository())
-    user = user_service.login_with_google(google_data)
-
+    user = userService.login_with_google(google_data)
     return {
         "message": "Logged in",
         "user": user
