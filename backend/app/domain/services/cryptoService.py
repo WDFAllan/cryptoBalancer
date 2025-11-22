@@ -1,9 +1,11 @@
 # app/domain/services/cryptoService.py
 from typing import List
 
+from app.domain.port.cryptoPort import ICryptoPort
+
 
 class CryptoService:
-    def __init__(self, repository):
+    def __init__(self, repository:ICryptoPort):
         self.repository = repository
 
     async def get_crypto_price(self, symbol: str) -> float:

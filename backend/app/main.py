@@ -11,18 +11,21 @@ from app.core.database.db_init import init_db
 from dotenv import load_dotenv
 import os
 
+from app.core.scheduler.candleScheduler import registerCandleScheduler
+
 load_dotenv()
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    init_db()
-    yield
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(title="Crypto Balancer API")
 
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY"))
 app.include_router(crypto_router, prefix="/api/v1")
 app.include_router(google_router, prefix="/api/v1")
 app.include_router(wallet_router, prefix="/api/v1")
 
+@app.on_event("startup")
+def startup_event():
+    print("🔌 Initialisation de la base de données…")
+    init_db()
+    print("✅ Base de données prête")
+
+registerCandleScheduler(app)

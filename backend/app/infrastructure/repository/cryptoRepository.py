@@ -2,7 +2,10 @@ from typing import List
 
 import httpx
 
-class CryptoRepository:
+from app.domain.port.cryptoPort import ICryptoPort
+
+
+class CryptoRepository(ICryptoPort):
     BASE_URL = "https://api.binance.com/api/v3"
 
     async def get_price(self, symbol: str) -> float:
