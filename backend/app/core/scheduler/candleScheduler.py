@@ -1,10 +1,10 @@
 from fastapi_utils.tasks import repeat_every
-from sqlalchemy import True_
 
 from app.core.database.database import SessionLocal
-from app.domain.services.candleService import CandleService
+from app.domain.services.candle.baseCandleService import baseCandleService
 from app.infrastructure.adapters.binanceCandleAdapter import binanceCandleAdapter
-from app.infrastructure.repository.candleRepository import CandleRepository
+from app.infrastructure.repository.candle.dailyCandleRepository import dailyCandleRepository
+from app.infrastructure.repository.candle.threeMinCandleRepository import threeMinCandleRepository
 from app.infrastructure.repository.cryptoRepository import CryptoRepository
 
 
@@ -12,19 +12,29 @@ def registerCandleScheduler(app):
 
     db = SessionLocal()
 
-    candle_repo = CandleRepository(db)
+    candle_repo = threeMinCandleRepository(db)
+    # candle_repo = dailyCandleRepository(db)
     crypto_repo = CryptoRepository()
     candle_provider = binanceCandleAdapter()
 
-    candle_service = CandleService(
+    candle_service = baseCandleService(
         candleRepo=candle_repo,
         cryptoRepo=crypto_repo,
-        binanceCandleAdapter=candle_provider
+        binanceAdapter=candle_provider,
+        timeframe="3m",
+        retention_days=730
     )
 
-    @app.on_event("startup")
-    @repeat_every(seconds=60 * 60 * 24, wait_first=True)
-    async def sync_candles():
-        print("Synchronisation automatique des bougies…")
-        await candle_service.syncLastTwoYears()
-        print("✅Synchronisation terminée.")
+    # @app.on_event("startup")
+    # @repeat_every(seconds=60 * 60 * 24, wait_first=True)
+    # async def sync_candles():
+    #     print("Synchronisation journalière automatique des bougies…")
+    #     await candle_service.syncPeriod(2)
+    #     print("✅Synchronisation terminée.")
+
+    # @app.on_event("startup")
+    # @repeat_every(seconds=60 * 3, wait_first=True)
+    # async def sync_3min_candles():
+    #     print("Synchronisation 3min automatique des bougies…")
+    #     await candle_service.updateCandles()
+    #     print("✅Synchronisation terminée.")

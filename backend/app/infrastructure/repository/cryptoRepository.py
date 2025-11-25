@@ -22,12 +22,14 @@ class CryptoRepository(ICryptoPort):
 
     async def get_all_symbols(self) -> List[str]:
 
-        endpoint = self.BASE_URL + "/exchangeInfo"
+        # endpoint = self.BASE_URL + "/exchangeInfo"
+        #
+        # async with httpx.AsyncClient() as client:
+        #     response = await client.get(endpoint)
+        #     response.raise_for_status()
+        #     data = response.json()
+        #
+        #     symbols = sorted([s["symbol"] for s in data["symbols"] if s["symbol"].endswith("EUR")])
 
-        async with httpx.AsyncClient() as client:
-            response = await client.get(endpoint)
-            response.raise_for_status()
-            data = response.json()
-
-            symbols = sorted([s["symbol"] for s in data["symbols"] if s["symbol"].endswith("EUR")])
-            return symbols
+        symbols = ["BTCEUR", "ETHEUR", "BNBEUR", "XRPEUR", "SOLEUR"]
+        return symbols

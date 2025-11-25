@@ -5,7 +5,7 @@ class binanceCandleAdapter:
 
     BASE_URL = "https://api.binance.com/api/v3/klines"
 
-    def fetchDailyCandles(self, symbol: str, start: datetime, end: datetime):
+    def fetchCandles(self, symbol: str, start: datetime, end: datetime,interval:str):
 
         all_candles = []
 
@@ -16,7 +16,7 @@ class binanceCandleAdapter:
 
             params = {
                 "symbol": symbol.upper(),
-                "interval": "1d",
+                "interval": interval,
                 "startTime": start_ms,
                 "endTime": end_ms,
                 "limit": 1000

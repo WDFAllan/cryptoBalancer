@@ -9,10 +9,10 @@ class ICandlePort(ABC):
     async def saveCandles(self, symbol: str, candles: List[Dict]):
         pass
 
-    @abstractmethod
-    async def deleteOlderThan(self, symbol: str, date: datetime):
-        pass
-
-    @abstractmethod
-    async def getCandlesBySymbol(self, symbol: str):
-        pass
+    # @abstractmethod
+    # async def deleteOlderThan(self, symbol: str, minDate: datetime):
+    #     pass
+    #
+    # @abstractmethod
+    # async def getCandlesBySymbol(self, symbol: str):
+    #     pass

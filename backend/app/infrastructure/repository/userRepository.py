@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from sqlalchemy.orm import Session
 from app.domain.models.user import User
 from app.domain.port.userPort import IUserPort
@@ -13,7 +15,8 @@ class UserRepository(IUserPort):
         entity = self.db.query(UserTable).filter_by(email = email).first()
         if not entity:
             return None
-        return User(id=entity.id, email=entity.email, username=entity.username)
+
+        return User(id=entity.id, email=entity.email, username=entity.username,createdAt=entity.createdAt)
 
     def create(self, user: User):
         entity = UserTable(
@@ -23,4 +26,4 @@ class UserRepository(IUserPort):
         self.db.add(entity)
         self.db.commit()
         self.db.refresh(entity)
-        return User(id=entity.id, email=entity.email, username=entity.username)
+        return User(id=entity.id, email=entity.email, username=entity.username,createdAt=entity.createdAt)
