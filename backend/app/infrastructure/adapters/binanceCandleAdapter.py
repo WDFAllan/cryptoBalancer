@@ -37,17 +37,13 @@ class binanceCandleAdapter:
                     "low": float(c[3]),
                     "close": float(c[4])
                 })
-            # Dernière bougie renvoyée
             last_ts = data[-1][0]
 
-            # Si Binance nous a renvoyé TOUT ce qui existe
             if last_ts >= end_ms:
                 break
 
-            # Avancer au lendemain pour éviter le doublon
             start_ms = last_ts + 24 * 3600 * 1000
 
-            # Sécurité anti boucle infinie
             if start_ms > end_ms:
                 break
 
