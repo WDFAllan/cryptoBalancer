@@ -6,13 +6,26 @@ services:
     container_name: crypto_balancer_db
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: crypto_balancer_db
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: .
+    container_name: backend
+    ports:
+      - "8000:8000"
+    environment:
+      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY}
+      DATABASE_URL: "postgresql+psycopg2://${DB_USER}:${DB_PASSWORD}@crypto_balancer_db:5432/crypto_balancer_db"
+    depends_on:
+      - db
+    volumes:
+      - .:/app
 
 volumes:
   pgdata:
