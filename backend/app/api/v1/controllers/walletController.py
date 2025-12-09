@@ -21,9 +21,9 @@ def createWallet(userId: int, service: WalletService = Depends(wallet_service)):
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/getWalletByUserId/{userId}", response_model=Wallet)
-def getWalletByUserId(user_id: int, service: WalletService = Depends(wallet_service)):
+def getWalletByUserId(userId: int, service: WalletService = Depends(wallet_service)):
     try:
-        return service.getWalletByUserId(user_id)
+        return service.getWalletByUserId(userId)
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
 

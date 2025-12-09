@@ -21,3 +21,9 @@ class UserService:
 
         new_user = User(id=None, email=email, username=username,createdAt=createdAt)
         return self.userRepo.create(new_user)
+
+    def getUserByEmail(self, email):
+        user = self.userRepo.get_by_email(email)
+        if user:
+            return user
+        return None
