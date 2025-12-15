@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request, Depends
 from sqlalchemy.orm import Session
+import os
 
 from app.core.config import oauth
 from app.core.security import create_access_token
@@ -14,7 +15,7 @@ def google_service(db:Session = Depends(get_db)) -> UserService:
 
 @router.get("/google/login")
 async def google_login(request: Request):
-    redirect_uri = request.url_for("google_callback")
+    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @router.get("/google/callback")
