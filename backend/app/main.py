@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.controllers.cryptoController import router as crypto_router
 from app.api.v1.controllers.googleController import router as google_router
 from app.api.v1.controllers.walletController import router as wallet_router
@@ -18,6 +19,14 @@ from app.core.scheduler.candleScheduler import registerCandleScheduler
 load_dotenv()
 
 app = FastAPI(title="Crypto Balancer API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:4200", "http://127.0.0.1:4200"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY"))
 app.include_router(crypto_router, prefix="/api/v1")
