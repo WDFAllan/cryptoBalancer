@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Depends
 from sqlalchemy.orm import Session
 
 from app.core.config import oauth
+from app.core.security import create_access_token
 from app.core.database.database import get_db
 from app.infrastructure.repository.userRepository import UserRepository
 from app.domain.services.userService import UserService
@@ -27,7 +28,6 @@ async def google_callback(
     google_data = await oauth.google.parse_id_token(token, nonce)
 
     user = userService.login_with_google(google_data)
-    return {
-        "message": "Logged in",
-        "user": user
-    }
+    token = create_access_token(user.email)
+    return {"access_token": token, "token_type": "bearer"}
+    
