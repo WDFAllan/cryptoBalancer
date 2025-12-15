@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi import APIRouter, Request, Depends, HTTPException, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 import os
@@ -59,3 +59,20 @@ async def google_callback(
     except Exception as e:
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:4200")
         return RedirectResponse(url=f"{frontend_url}/login?error=auth_failed", status_code=302)
+
+
+@router.post("/logout")
+async def logout(request: Request):
+    is_production = os.getenv("ENVIRONMENT", "development") == "production"
+
+    request.session.clear()
+
+    response = Response(status_code=204)
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        secure=is_production,
+        samesite="lax",
+        path="/",
+    )
+    return response
