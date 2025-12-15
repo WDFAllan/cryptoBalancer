@@ -13,14 +13,19 @@ class UserService:
     def login_with_google(self, google_data: dict):
         email = google_data.get("email")
         username = google_data.get("name")
-        createdAt = datetime.now()
+        
+        if not email:
+            raise ValueError("Email is required from Google authentication")
+        
+        createdAt = datetime.now(timezone.utc)
 
         user = self.userRepo.get_by_email(email)
         if user:
             return user
 
-        new_user = User(id=None, email=email, username=username,createdAt=createdAt)
-        return self.userRepo.create(new_user)
+        new_user = User(id=None, email=email, username=username, createdAt=createdAt)
+        created_user = self.userRepo.create(new_user)
+        return created_user
 
     def getUserByEmail(self, email):
         user = self.userRepo.get_by_email(email)
