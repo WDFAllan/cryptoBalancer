@@ -55,7 +55,6 @@ class Broker:
             "max_drift": max_drift,
             "l1_drift": l1_drift,
         }
-        self.history.append(rec)
 
         # positions (optionnel)
         for a in self.assets:
