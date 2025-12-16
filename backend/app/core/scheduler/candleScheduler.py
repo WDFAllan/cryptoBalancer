@@ -35,18 +35,18 @@ def registerCandleScheduler(app):
             retention_days=2
         )
 
-    @app.on_event("startup")
-    @repeat_every(seconds=60 * 60 * 24, wait_first=True)
-    async def sync_candles():
-        service = get_daily_service()
-        print("Synchronisation journalière automatique des bougies…")
-        await service.updateCandles()
-        print("✅Synchronisation terminée.")
-
-    @app.on_event("startup")
-    @repeat_every(seconds=60 * 3, wait_first=True)
-    async def sync_3min_candles():
-        service = get_3min_service()
-        print("Synchronisation 3min automatique des bougies…")
-        await service.updateCandles()
-        print("✅Synchronisation terminée.")
+    # @app.on_event("startup")
+    # @repeat_every(seconds=60 * 60 * 24, wait_first=True)
+    # async def sync_candles():
+    #     service = get_daily_service()
+    #     print("Synchronisation journalière automatique des bougies…")
+    #     await service.updateCandles()
+    #     print("✅Synchronisation terminée.")
+    #
+    # @app.on_event("startup")
+    # @repeat_every(seconds=60 * 3, wait_first=True)
+    # async def sync_3min_candles():
+    #     service = get_3min_service()
+    #     print("Synchronisation 3min automatique des bougies…")
+    #     await service.updateCandles()
+    #     print("✅Synchronisation terminée.")

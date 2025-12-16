@@ -29,3 +29,9 @@ class dailyCandleRepository(BaseCandleRepository):
             .all()
         )
         return rows
+
+    def getAllCandles(self):
+        rows = (
+            self.db.query(CandleTable).all()
+        )
+        return rows
