@@ -1,5 +1,6 @@
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
+
 
 class binanceCandleAdapter:
 
@@ -31,7 +32,7 @@ class binanceCandleAdapter:
             # Ajout
             for c in data:
                 all_candles.append({
-                    "open_time": datetime.fromtimestamp(c[0] / 1000),
+                    "open_time": datetime.fromtimestamp(c[0] / 1000, tz=timezone.utc),
                     "open": float(c[1]),
                     "high": float(c[2]),
                     "low": float(c[3]),

@@ -1,6 +1,6 @@
 from app.infrastructure.repository.candle.baseCandleRepository import BaseCandleRepository
 
-from app.infrastructure.models.candle.candleTreeMTable import CandleThreeMTable
+from app.infrastructure.models.candle.candleThreeMTable import CandleThreeMTable
 
 
 

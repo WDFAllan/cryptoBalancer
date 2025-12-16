@@ -1,5 +1,5 @@
 from app.domain.services.candle.baseCandleService import baseCandleService
-from app.infrastructure.models.candle.candleTreeMTable import CandleThreeMTable
+from app.infrastructure.models.candle.candleThreeMTable import CandleThreeMTable
 
 
 class threeMinutesCandleService(baseCandleService):
