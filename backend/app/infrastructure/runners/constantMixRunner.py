@@ -6,10 +6,9 @@ from app.domain.strategies.constantMix.constantMixStrategy import ConstantMixStr
 
 class ConstantMixRunner:
 
-    def run(self, prices: pd.DataFrame):
+    def run(self, prices: pd.DataFrame,wallet:dict):
         params = ConstantMixParams(
             target_weights={"BTCEUR": 0.8, "ETHEUR": 0.2,"SOLEUR":0,"XRPEUR":0,"BNBEUR":0},
-            initial_capital=10000,
             fee_rate=0.001,
             fixed_fee=1,
             slippage=0.0002,
@@ -18,4 +17,4 @@ class ConstantMixRunner:
             drift_threshold=0
         )
         strategy = ConstantMixStrategy(params)
-        return strategy.run(prices)
+        return strategy.run(prices,wallet)

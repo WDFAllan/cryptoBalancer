@@ -16,7 +16,6 @@ class WalletService:
 
 
     def addItemToWallet(self, user_id: int, symbol: str, amount: float) -> Wallet:
-
         item = WalletItem(id=None ,symbol=symbol, amount=amount)
         return self.walletRepo.addToWallet(user_id, item)
 

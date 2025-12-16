@@ -93,3 +93,27 @@ def sharpe_ratio(series: pd.Series, rf: float = 0.0, periods_per_year: int = 365
 def pct_format(x: float, digits: int = 2) -> str:
     """Formate un nombre en pourcentage proprement."""
     return f"{x * 100:.{digits}f}%"
+
+def wallet_items_to_holdings(wallet: dict, quote: str = "EUR") -> dict[str, float]:
+    """
+    Transforme le wallet DB en holdings broker.
+    Exemple: BTCEUR -> BTC
+    """
+    if isinstance(wallet, dict):
+        items = wallet.get("items", [])
+    else:
+        items = getattr(wallet, "items", [])
+    holdings = {}
+    for item in items:
+        holdings[item.symbol] = item.amount
+    return holdings
+
+def compute_portfolio_value(holdings: dict[str, float], prices_row: pd.Series) -> float:
+    """
+    Calcule la valeur totale du portefeuille à un instant t
+    """
+    value = 0.0
+    for asset, qty in holdings.items():
+        if asset in prices_row and prices_row[asset] > 0:
+            value += qty * prices_row[asset]
+    return float(value)
