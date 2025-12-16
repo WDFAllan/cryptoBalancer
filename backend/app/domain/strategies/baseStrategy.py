@@ -4,5 +4,5 @@ import pandas as pd
 class BaseStrategy(ABC):
 
     @abstractmethod
-    def run(self, df: pd.DataFrame, ) -> pd.DataFrame:
+    def run(self, df: pd.DataFrame,wallet:dict) -> pd.DataFrame:
         pass

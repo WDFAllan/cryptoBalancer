@@ -17,15 +17,12 @@ class TradeCost:
 # --- additions / modifications dans core/broker.py ---
 
 class Broker:
-    def __init__(self, prices: pd.DataFrame, initial_capital: float, trade_cost: TradeCost, verbose: bool = False):
+    def __init__(self, prices: pd.DataFrame, trade_cost: TradeCost, verbose: bool = False):
         self.prices = prices
         self.assets = prices.columns.tolist()
         self.trade_cost = trade_cost
         self.verbose = verbose
 
-        # self.capital ne sert pas (valorisation = somme des positions)
-        # on peut le garder si tu veux, mais il n'est plus nécessaire
-        self.capital = initial_capital
         self.holdings = {a: 0.0 for a in self.assets}
         self.history = []
 
