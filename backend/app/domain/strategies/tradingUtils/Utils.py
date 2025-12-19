@@ -117,3 +117,31 @@ def compute_portfolio_value(holdings: dict[str, float], prices_row: pd.Series) -
         if asset in prices_row and prices_row[asset] > 0:
             value += qty * prices_row[asset]
     return float(value)
+
+def calculate_target_weights_by_value(
+    holdings: dict[str, float],
+    prices: pd.DataFrame
+) -> dict[str, float]:
+    """
+    Calcule les target weights basés sur la valorisation (quantité * prix).
+    """
+    if prices.empty:
+        raise ValueError("Le DataFrame de prix est vide")
+
+    last_prices = prices.iloc[-1]
+
+    values = {}
+    for asset, quantity in holdings.items():
+        if asset not in last_prices:
+            raise KeyError(f"{asset} absent du DataFrame de prix")
+        values[asset] = quantity * float(last_prices[asset])
+
+    total_value = sum(values.values())
+
+    if total_value == 0:
+        raise ValueError("La valeur totale du portefeuille est nulle")
+
+    return {
+        asset: value / total_value
+        for asset, value in values.items()
+    }
