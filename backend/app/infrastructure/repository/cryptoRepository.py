@@ -11,7 +11,8 @@ class CryptoRepository(ICryptoPort):
     async def get_price(self, symbol: str) -> float:
 
         endpoint = self.BASE_URL + "/ticker/price"
-        symbol = symbol.upper() + "USDT"  # ex: BTC -> BTCUSDT
+        symbol = symbol.upper()
+        # symbol = symbol.upper() + "EUR"  # ex: BTC -> BTCEUR
 
         async with httpx.AsyncClient() as client:
             response = await client.get(endpoint, params={"symbol": symbol})
