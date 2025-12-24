@@ -9,6 +9,9 @@ class WalletService:
         self.walletRepo = walletRepo
 
     def createWalletForUser(self, user_id: int) -> Wallet:
+        if user_id <= 0:
+            raise ValueError("user_id must be > 0")
+
         existing_wallet = self.walletRepo.getWalletByUserId(user_id)
         if existing_wallet:
             raise Exception(f"User {user_id} already has a wallet.")
@@ -16,6 +19,8 @@ class WalletService:
 
 
     def addItemToWallet(self, user_id: int, symbol: str, amount: float) -> Wallet:
+        if amount < 0:
+            raise ValueError("amount must be >= 0")
         item = WalletItem(id=None ,symbol=symbol, amount=amount)
         return self.walletRepo.addToWallet(user_id, item)
 
