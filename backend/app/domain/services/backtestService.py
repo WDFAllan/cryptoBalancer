@@ -45,6 +45,4 @@ class BacktestService:
         runner_cls = StrategyFactory.create(strategy_name)  # renvoie la classe runner
         runner = runner_cls()  # instancie le runner avec ses paramètres fixes
 
-        # 3) Exécute le backtest
         return runner.run(prices_df,wallet)
-

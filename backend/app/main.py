@@ -19,7 +19,16 @@ from app.core.scheduler.candleScheduler import registerCandleScheduler
 
 load_dotenv()
 
-app = FastAPI(title="Crypto Balancer API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("🔌 Initialisation de la base de données…")
+    init_db()
+    print("✅ Base de données prête")
+    registerCandleScheduler(app)
+    yield
+
+
+app = FastAPI(title="Crypto Balancer API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,10 +46,4 @@ app.include_router(wallet_router, prefix="/api/v1")
 app.include_router(candle_router, prefix="/api/v1")
 app.include_router(backtest_router, prefix="/api/v1")
 
-@app.on_event("startup")
-def startup_event():
-    print("🔌 Initialisation de la base de données…")
-    init_db()
-    print("✅ Base de données prête")
-
-registerCandleScheduler(app)
+# Lifespan handler takes care of startup initialization (DB + scheduler)
