@@ -209,3 +209,20 @@ __marimo__/
 .env
 
 .db
+.idea/.gitignore
+.idea/cryptoBalancer.iml
+.idea/data_source_mapping.xml
+.idea/dataSources.local.xml
+.idea/dataSources.xml
+.idea/dbnavigator.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+.idea/dataSources/6dacb4ee-d9f6-4ac0-9809-71a5cf54af1d.xml
+.idea/dataSources/6dacb4ee-d9f6-4ac0-9809-71a5cf54af1d/storage_v2/_src_/database/crypto_balancer_db.yRluXg.meta
+.idea/dataSources/6dacb4ee-d9f6-4ac0-9809-71a5cf54af1d/storage_v2/_src_/database/crypto_balancer_db.yRluXg/schema/information_schema.FNRwLQ.meta
+.idea/dataSources/6dacb4ee-d9f6-4ac0-9809-71a5cf54af1d/storage_v2/_src_/database/crypto_balancer_db.yRluXg/schema/pg_catalog.0S1ZNQ.meta
+.idea/dataSources/6dacb4ee-d9f6-4ac0-9809-71a5cf54af1d/storage_v2/_src_/database/crypto_balancer_db.yRluXg/schema/public.abK9xQ.meta
+.idea/inspectionProfiles/profiles_settings.xml
+.vscode/settings.json
+backend/app.db
