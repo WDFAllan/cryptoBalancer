@@ -34,3 +34,18 @@ def addItemToWallet(userId: int, symbol: str, amount: float,service:WalletServic
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
 
+@router.get("/exists/{userId}")
+def walletExists(userId: int, service: WalletService = Depends(wallet_service)) -> bool:
+    try:
+        return service.walletExists(userId)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/{userId}")
+def deleteWallet(userId: int, service: WalletService = Depends(wallet_service)):
+    try:
+        service.deleteWallet(userId)
+        return {"message": f"Wallet for user {userId} deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+

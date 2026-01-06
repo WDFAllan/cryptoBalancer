@@ -17,3 +17,7 @@ class IWalletPort(ABC):
     @abstractmethod
     def getWalletByUserId(self,userId:int) -> Wallet:
         pass
+
+    @abstractmethod
+    def deleteWallet(self, userId: int) -> None:
+        pass

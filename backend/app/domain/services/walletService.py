@@ -27,3 +27,13 @@ class WalletService:
 
     def getWalletByUserId(self, user_id: int) -> Wallet:
         return self.walletRepo.getWalletByUserId(user_id)
+
+    def walletExists(self, user_id: int) -> bool:
+        wallet = self.walletRepo.getWalletByUserId(user_id)
+        return wallet is not None
+
+    def deleteWallet(self, user_id: int) -> None:
+        wallet = self.walletRepo.getWalletByUserId(user_id)
+        if not wallet:
+            raise Exception(f"No wallet found for user {user_id}")
+        self.walletRepo.deleteWallet(user_id)

@@ -73,3 +73,17 @@ class WalletRepository(IWalletPort):
         ]
 
         return Wallet(id=None,userId=userId, items=items)
+
+    def deleteWallet(self, userId: int) -> None:
+        wallet_table = (
+            self.db.query(WalletTable)
+            .filter(WalletTable.userId == userId)
+            .first()
+        )
+
+        if not wallet_table:
+            raise Exception(f"No wallet found for user {userId}")
+
+        # Grâce au cascade="all, delete-orphan", les WalletItems seront supprimés automatiquement
+        self.db.delete(wallet_table)
+        self.db.commit()
