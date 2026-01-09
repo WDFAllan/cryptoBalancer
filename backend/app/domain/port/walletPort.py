@@ -21,3 +21,11 @@ class IWalletPort(ABC):
     @abstractmethod
     def deleteWallet(self, userId: int) -> None:
         pass
+
+    @abstractmethod
+    def removeItemFromWallet(self, userId: int, symbol: str) -> Wallet:
+        pass
+
+    @abstractmethod
+    def updateItemAmount(self, userId: int, symbol: str, amount: float) -> Wallet:
+        pass

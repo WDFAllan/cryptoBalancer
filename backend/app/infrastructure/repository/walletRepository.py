@@ -87,3 +87,65 @@ class WalletRepository(IWalletPort):
         # Grâce au cascade="all, delete-orphan", les WalletItems seront supprimés automatiquement
         self.db.delete(wallet_table)
         self.db.commit()
+
+    def removeItemFromWallet(self, userId: int, symbol: str) -> Wallet:
+        wallet_table = (
+            self.db.query(WalletTable)
+            .filter(WalletTable.userId == userId)
+            .first()
+        )
+
+        if not wallet_table:
+            raise Exception(f"No wallet found for user {userId}")
+
+        # Chercher l'item avec le symbole spécifié
+        item_to_remove = next(
+            (i for i in wallet_table.items if i.symbol == symbol),
+            None
+        )
+
+        if not item_to_remove:
+            raise Exception(f"No item with symbol {symbol} found in wallet")
+
+        # Supprimer l'item
+        self.db.delete(item_to_remove)
+        self.db.commit()
+        self.db.refresh(wallet_table)
+
+        # Convertir vers le modèle domaine
+        items = [
+            WalletItem(id=i.id, symbol=i.symbol, amount=i.amount)
+            for i in wallet_table.items
+        ]
+        return Wallet(id=None, userId=wallet_table.userId, items=items)
+
+    def updateItemAmount(self, userId: int, symbol: str, amount: float) -> Wallet:
+        wallet_table = (
+            self.db.query(WalletTable)
+            .filter(WalletTable.userId == userId)
+            .first()
+        )
+
+        if not wallet_table:
+            raise Exception(f"No wallet found for user {userId}")
+
+        # Chercher l'item avec le symbole spécifié
+        item_to_update = next(
+            (i for i in wallet_table.items if i.symbol == symbol),
+            None
+        )
+
+        if not item_to_update:
+            raise Exception(f"No item with symbol {symbol} found in wallet")
+
+        # Mettre à jour la quantité
+        item_to_update.amount = amount
+        self.db.commit()
+        self.db.refresh(wallet_table)
+
+        # Convertir vers le modèle domaine
+        items = [
+            WalletItem(id=i.id, symbol=i.symbol, amount=i.amount)
+            for i in wallet_table.items
+        ]
+        return Wallet(id=None, userId=wallet_table.userId, items=items)
