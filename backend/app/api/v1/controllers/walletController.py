@@ -42,6 +42,7 @@ def walletExists(userId: int, service: WalletService = Depends(wallet_service)) 
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
 @router.delete("/{userId}")
 def deleteWallet(userId: int, service: WalletService = Depends(wallet_service)):
     try:
