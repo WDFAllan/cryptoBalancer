@@ -42,7 +42,7 @@ def registerCandleScheduler(app):
     #     print("Synchronisation journalière automatique des bougies…")
     #     await service.updateCandles()
     #     print("✅Synchronisation terminée.")
-    #
+    
     # @app.on_event("startup")
     # @repeat_every(seconds=60 * 3, wait_first=True)
     # async def sync_3min_candles():

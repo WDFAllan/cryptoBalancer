@@ -18,67 +18,60 @@ class ConstantMixStrategy(BaseStrategy):
         }
         self.params.target_weights = normalize_weights(self.params.target_weights)
 
-    def run(self, prices:pd.DataFrame,wallet:dict) -> pd.DataFrame:
-        p = self.params
+    def _run_with_rebalance_mode(self, prices: pd.DataFrame, wallet: dict, mode: str) -> pd.DataFrame:
+        from copy import deepcopy
+        p = deepcopy(self.params)
+        p.rebalance = mode
         cost = TradeCost(fee_rate=p.fee_rate, fixed_fee=p.fixed_fee, slippage=p.slippage)
         broker = Broker(prices=prices, trade_cost=cost, verbose=p.verbose)
-
-        # Déploiement initial (t0)
         t0 = 0
         p0 = prices.iloc[t0]
-
         wallet_holdings = wallet_items_to_holdings(wallet, quote="EUR")
-
         for asset, qty in wallet_holdings.items():
             if asset in broker.holdings:
                 broker.holdings[asset] = qty
-
         initial_capital = compute_portfolio_value(broker.holdings, p0)
-
         if initial_capital <= 0:
             raise ValueError("Wallet utilisateur vide ou prix manquants")
-
         if p.verbose:
-            print(f"\n[{prices.index[t0].date()}] Wallet initial chargé")
+            print(f"\n[{prices.index[t0].date()}] Wallet initial chargé (mode {mode})")
             print(f"  Capital réel : {initial_capital:.2f} €")
             print("  Holdings    : " + ", ".join(
                 f"{a}={q:.6f}" for a, q in broker.holdings.items() if q > 0
             ))
-
-            # =========================
-            # 3️⃣ RÉÉQUILIBRAGE INITIAL
-            # =========================
         tw0 = self.target_weights(t0, prices)
-
         c0 = broker.rebalance(t0, tw0)
         broker.mark_to_market(t0, extra_cost=c0, target_weights=tw0)
-
-        # =========================
-        # 4️⃣ BOUCLE TEMPORELLE
-        # =========================
         for t in range(1, len(prices)):
             tw = self.target_weights(t, prices)
-
             cw = broker._current_weights(t)
             max_drift = max(
                 abs(cw.get(a, 0.0) - tw.get(a, 0.0))
                 for a in prices.columns
                 if a in cw or a in tw
             )
-
             scheduled = self._is_rebalance_day(prices.index, t, p.rebalance)
             drift_hit = (
-                    p.drift_threshold is not None
-                    and max_drift >= p.drift_threshold
+                p.drift_threshold is not None and max_drift >= p.drift_threshold
             )
-
             if scheduled or drift_hit:
                 c = broker.rebalance(t, tw)
                 broker.mark_to_market(t, extra_cost=c, target_weights=tw)
             else:
                 broker.mark_to_market(t, extra_cost=0.0, target_weights=tw)
+        hist = broker.get_history()
+        hist.attrs = {"rebalance_mode": mode}
+        return hist
 
-        return broker.get_history()
+    def run(self, prices: pd.DataFrame, wallet: dict) -> pd.DataFrame:
+        result_w = self._run_with_rebalance_mode(prices, wallet, "W")
+        result_m = self._run_with_rebalance_mode(prices, wallet, "M")
+        value_w = (result_w["value"].iloc[-1] / result_w["value"].iloc[0])**(1/(len(prices)/365)) - 1
+        value_m = (result_m["value"].iloc[-1] / result_m["value"].iloc[0])**(1/(len(prices)/365)) - 1
+        best_mode = "W" if value_w >= value_m else "M"
+        best_df = result_w if value_w >= value_m else result_m
+        best_df.attrs['best_mode'] = best_mode
+        return best_df
 
     def target_weights(self, t: int, prices: pd.DataFrame) -> Dict[str, float]:
         """Renvoie les poids cibles à la date t (identiques chaque jour, filtrés aux colonnes disponibles)."""
