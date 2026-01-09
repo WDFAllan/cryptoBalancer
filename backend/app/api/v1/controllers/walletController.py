@@ -41,6 +41,7 @@ def walletExists(userId: int, service: WalletService = Depends(wallet_service)) 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.delete("/{userId}")
 def deleteWallet(userId: int, service: WalletService = Depends(wallet_service)):
     try:
@@ -48,4 +49,18 @@ def deleteWallet(userId: int, service: WalletService = Depends(wallet_service)):
         return {"message": f"Wallet for user {userId} deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+@router.delete("/{userId}/item/{symbol}", response_model=Wallet)
+def removeItemFromWallet(userId: int, symbol: str, service: WalletService = Depends(wallet_service)):
+    try:
+        return service.removeItemFromWallet(userId, symbol)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@router.patch("/{userId}/item/{symbol}", response_model=Wallet)
+def updateItemAmount(userId: int, symbol: str, amount: float, service: WalletService = Depends(wallet_service)):
+    try:
+        return service.updateItemAmount(userId, symbol, amount)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 

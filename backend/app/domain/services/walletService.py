@@ -37,3 +37,15 @@ class WalletService:
         if not wallet:
             raise Exception(f"No wallet found for user {user_id}")
         self.walletRepo.deleteWallet(user_id)
+
+    def removeItemFromWallet(self, user_id: int, symbol: str) -> Wallet:
+        if not symbol or symbol.strip() == "":
+            raise ValueError("symbol cannot be empty")
+        return self.walletRepo.removeItemFromWallet(user_id, symbol)
+
+    def updateItemAmount(self, user_id: int, symbol: str, amount: float) -> Wallet:
+        if not symbol or symbol.strip() == "":
+            raise ValueError("symbol cannot be empty")
+        if amount < 0:
+            raise ValueError("amount must be >= 0")
+        return self.walletRepo.updateItemAmount(user_id, symbol, amount)
