@@ -1,0 +1,26 @@
+{
+    "Binance": {
+        "fee": 0.001,
+        "slippage": {
+            "majors": 0.0005,
+            "high_liq": 0.001,
+            "others": 0.002
+        }
+    },
+    "Kraken": {
+        "fee": 0.004,
+        "slippage": {
+            "majors": 0.0007,
+            "high_liq": 0.0012,
+            "others": 0.0025
+        }
+    },
+    "Coinbase": {
+        "fee": 0.006,
+        "slippage": {
+            "majors": 0.0010,
+            "high_liq": 0.0020,
+            "others": 0.0030
+        }
+    }
+}

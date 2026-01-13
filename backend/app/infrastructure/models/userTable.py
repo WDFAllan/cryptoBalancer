@@ -8,3 +8,4 @@ class UserTable(Base):
     email = Column(String,unique=True,index=True)
     username = Column(String)
     createdAt = Column(DateTime(timezone=True), server_default=func.now())
+    favorite_platform = Column(String, nullable=True)

@@ -8,3 +8,4 @@ class User:
     email: str
     username: str
     createdAt: datetime | None
+    favorite_platform: str | None = None
