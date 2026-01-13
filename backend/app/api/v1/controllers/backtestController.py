@@ -7,6 +7,7 @@ from app.domain.services.walletService import WalletService
 from app.domain.strategies.BaseParams import BaseParams
 from app.infrastructure.repository.candle.dailyCandleRepository import dailyCandleRepository
 from app.infrastructure.repository.walletRepository import WalletRepository
+from app.infrastructure.repository.userRepository import UserRepository
 
 router = APIRouter(prefix="/strategy", tags=["Strategy"])
 
@@ -16,8 +17,9 @@ def get_daily_candle_repo(db: Session = Depends(get_db)):
 def backtestService(db: Session = Depends(get_db)):
     dailyCandleRepo = dailyCandleRepository(db)
     walletRepo = WalletRepository(db)
+    userRepo = UserRepository(db)
     walletService = WalletService(walletRepo)
-    return BacktestService(dailyCandleRepo=dailyCandleRepo,walletService=walletService)
+    return BacktestService(dailyCandleRepo=dailyCandleRepo, walletService=walletService, userRepo=userRepo)
 
 
 @router.post("/{strategy_name}", response_model=None)

@@ -20,6 +20,8 @@ class ConstantMixStrategy(BaseStrategy):
 
     def _run_with_rebalance_mode(self, prices: pd.DataFrame, wallet: dict, mode: str) -> pd.DataFrame:
         from copy import deepcopy
+        from app.tradingutils.symbol_category import get_symbol_category
+        from app.tradingutils.platform_fees_loader import get_slippage_rate
         p = deepcopy(self.params)
         p.rebalance = mode
         cost = TradeCost(fee_rate=p.fee_rate, fixed_fee=p.fixed_fee, slippage=p.slippage)
@@ -39,8 +41,11 @@ class ConstantMixStrategy(BaseStrategy):
             print("  Holdings    : " + ", ".join(
                 f"{a}={q:.6f}" for a, q in broker.holdings.items() if q > 0
             ))
+        # Création de la slippage map par asset (avec fallback plateforme par défaut)
+        favorite_platform = getattr(self.params, 'favorite_platform', 'Binance')
+        slippage_map = {a: get_slippage_rate(favorite_platform, get_symbol_category(a)) for a in prices.columns}
         tw0 = self.target_weights(t0, prices)
-        c0 = broker.rebalance(t0, tw0)
+        c0 = broker.rebalance(t0, tw0, slippage_map=slippage_map)
         broker.mark_to_market(t0, extra_cost=c0, target_weights=tw0)
         for t in range(1, len(prices)):
             tw = self.target_weights(t, prices)
@@ -55,7 +60,9 @@ class ConstantMixStrategy(BaseStrategy):
                 p.drift_threshold is not None and max_drift >= p.drift_threshold
             )
             if scheduled or drift_hit:
-                c = broker.rebalance(t, tw)
+                # recalcul de la slippage map chaque pas au cas où portefeuille évolue
+                slippage_map = {a: get_slippage_rate(favorite_platform, get_symbol_category(a)) for a in prices.columns}
+                c = broker.rebalance(t, tw, slippage_map=slippage_map)
                 broker.mark_to_market(t, extra_cost=c, target_weights=tw)
             else:
                 broker.mark_to_market(t, extra_cost=0.0, target_weights=tw)

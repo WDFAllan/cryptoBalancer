@@ -69,7 +69,7 @@ class Broker:
         px = self.prices.iloc[t]
         return float(sum(self.holdings[a] * px[a] for a in self.assets))
 
-    def rebalance(self, t: int, target_weights: dict[str, float]) -> float:
+    def rebalance(self, t: int, target_weights: dict[str, float], slippage_map: dict[str, float] = None) -> float:
         total_value = self._portfolio_value(t)
         px = self.prices.iloc[t]
         current_value = {a: self.holdings[a] * px[a] for a in self.assets}
@@ -79,8 +79,6 @@ class Broker:
         # --- frais (calculés sur la valeur nominale, hors slippage) ---
         cost = self.trade_cost.compute(trade_values)
 
-        # --- exécution avec slippage directionnel sur le prix d'exécution ---
-        slip = float(self.trade_cost.slippage)
         trades_qty = {}
         for a in self.assets:
             dv = trade_values[a]  # valeur à acheter/vendre (en €)
@@ -94,6 +92,7 @@ class Broker:
                 continue
 
             # Prix d'exécution avec slippage : achat => prix plus haut, vente => prix plus bas
+            slip = slippage_map[a] if slippage_map and a in slippage_map else float(self.trade_cost.slippage)
             if dv > 0:  # Achat
                 p_exec = p0 * (1.0 + slip)
             else:  # Vente
