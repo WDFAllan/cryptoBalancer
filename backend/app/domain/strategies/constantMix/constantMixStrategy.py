@@ -3,8 +3,12 @@ from typing import Dict
 from app.domain.strategies.baseStrategy import BaseStrategy
 import pandas as pd
 from app.domain.strategies.tradingUtils.Broker import Broker, TradeCost
-from app.domain.strategies.tradingUtils.Utils import normalize_weights, wallet_items_to_holdings, \
-    compute_portfolio_value
+from app.domain.strategies.tradingUtils.Utils import (
+    normalize_weights, 
+    wallet_items_to_holdings, 
+    compute_portfolio_value,
+    compute_cagr
+)
 from app.domain.strategies.constantMix.constantMixParams import ConstantMixParams
 
 
@@ -20,6 +24,8 @@ class ConstantMixStrategy(BaseStrategy):
 
     def _run_with_rebalance_mode(self, prices: pd.DataFrame, wallet: dict, mode: str) -> pd.DataFrame:
         from copy import deepcopy
+        from app.tradingutils.symbol_category import get_symbol_category
+        from app.tradingutils.platform_fees_loader import get_slippage_rate
         p = deepcopy(self.params)
         p.rebalance = mode
         cost = TradeCost(fee_rate=p.fee_rate, fixed_fee=p.fixed_fee, slippage=p.slippage)
@@ -39,8 +45,11 @@ class ConstantMixStrategy(BaseStrategy):
             print("  Holdings    : " + ", ".join(
                 f"{a}={q:.6f}" for a, q in broker.holdings.items() if q > 0
             ))
+        # Création de la slippage map par asset (avec fallback plateforme par défaut)
+        favorite_platform = getattr(self.params, 'favorite_platform', 'Binance')
+        slippage_map = {a: get_slippage_rate(favorite_platform, get_symbol_category(a)) for a in prices.columns}
         tw0 = self.target_weights(t0, prices)
-        c0 = broker.rebalance(t0, tw0)
+        c0 = broker.rebalance(t0, tw0, slippage_map=slippage_map)
         broker.mark_to_market(t0, extra_cost=c0, target_weights=tw0)
         for t in range(1, len(prices)):
             tw = self.target_weights(t, prices)
@@ -55,7 +64,9 @@ class ConstantMixStrategy(BaseStrategy):
                 p.drift_threshold is not None and max_drift >= p.drift_threshold
             )
             if scheduled or drift_hit:
-                c = broker.rebalance(t, tw)
+                # recalcul de la slippage map chaque pas au cas où portefeuille évolue
+                slippage_map = {a: get_slippage_rate(favorite_platform, get_symbol_category(a)) for a in prices.columns}
+                c = broker.rebalance(t, tw, slippage_map=slippage_map)
                 broker.mark_to_market(t, extra_cost=c, target_weights=tw)
             else:
                 broker.mark_to_market(t, extra_cost=0.0, target_weights=tw)
@@ -66,10 +77,14 @@ class ConstantMixStrategy(BaseStrategy):
     def run(self, prices: pd.DataFrame, wallet: dict) -> pd.DataFrame:
         result_w = self._run_with_rebalance_mode(prices, wallet, "W")
         result_m = self._run_with_rebalance_mode(prices, wallet, "M")
-        value_w = (result_w["value"].iloc[-1] / result_w["value"].iloc[0])**(1/(len(prices)/365)) - 1
-        value_m = (result_m["value"].iloc[-1] / result_m["value"].iloc[0])**(1/(len(prices)/365)) - 1
-        best_mode = "W" if value_w >= value_m else "M"
-        best_df = result_w if value_w >= value_m else result_m
+        
+        # Calcul correct du CAGR en utilisant les dates réelles de l'index
+        # au lieu de len(prices)/365 qui ignore les weekends et jours fériés
+        cagr_w = compute_cagr(result_w["value"], use_index=True)
+        cagr_m = compute_cagr(result_m["value"], use_index=True)
+        
+        best_mode = "W" if cagr_w >= cagr_m else "M"
+        best_df = result_w if cagr_w >= cagr_m else result_m
         best_df.attrs['best_mode'] = best_mode
         return best_df
 

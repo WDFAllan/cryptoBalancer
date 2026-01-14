@@ -50,9 +50,15 @@ class DynamicThresholdStrategy(BaseStrategy):
                 f"{a}={q:.6f}" for a, q in broker.holdings.items() if q > 0
             ))
 
+        # Création de la slippage map par asset (selon catégorie de liquidité)
+        from app.tradingutils.symbol_category import get_symbol_category
+        from app.tradingutils.platform_fees_loader import get_slippage_rate
+        favorite_platform = p.favorite_platform
+        slippage_map = {a: get_slippage_rate(favorite_platform, get_symbol_category(a)) for a in prices.columns}
+
         # Rééquilibrage initial
         tw0 = self.target_weights(t0, prices)
-        c0 = broker.rebalance(t0, tw0)
+        c0 = broker.rebalance(t0, tw0, slippage_map=slippage_map)
         broker.mark_to_market(t0, extra_cost=c0, target_weights=tw0)
         self.last_rebalance_day = t0
 
@@ -73,6 +79,7 @@ class DynamicThresholdStrategy(BaseStrategy):
                     drifts[asset] = drift
 
             # Calcul des seuils par actif (thr[a])
+            from app.tradingutils.drift_threshold import get_drift_threshold
             thresholds = {}
             current_date = prices.index[t]
             
@@ -81,17 +88,17 @@ class DynamicThresholdStrategy(BaseStrategy):
                     # Seuil fixe pour les actifs stables
                     thresholds[asset] = p.stable_threshold
                 else:
-                    # Seuil dynamique basé sur la volatilité de l'actif
-                    # Utiliser l'index pour récupérer la volatilité à la date t
+                    # D'abord : check si drift threshold dynamique par catégorie/plateforme
+                    candidate_thr = get_drift_threshold(asset, getattr(p, 'favorite_platform', None))
+                    # Option : garder la logique volatilité, choisir le max des 2 si souhaité
                     if current_date in vol_ann.index and asset in vol_ann.columns:
                         vol_a = vol_ann.loc[current_date, asset]
                     else:
                         vol_a = 0.0
                     
-                    # Formule: thr[a] = clamp(min_th + k * vol[a], min_th, max_th)
-                    thr_a = p.min_th + p.k * vol_a
-                    # Clamp entre min_th et max_th
-                    thresholds[asset] = max(p.min_th, min(p.max_th, thr_a))
+                    # Option : threshold final = max (catégorie, formule volatilité classique)
+                    thr_vol = max(p.min_th, min(p.max_th, p.min_th + p.k * vol_a))
+                    thresholds[asset] = max(candidate_thr, thr_vol)
 
             # Vérification des conditions de rééquilibrage
             # Déclenchement si au moins un actif dépasse son seuil
@@ -113,16 +120,19 @@ class DynamicThresholdStrategy(BaseStrategy):
                       f"Cooldown: {days_since_rebalance}/{p.cooldown_days}")
 
             if cooldown_met and should_rebalance:
+                # Recalcul de la slippage map au cas où le portefeuille a évolué
+                slippage_map = {a: get_slippage_rate(favorite_platform, get_symbol_category(a)) for a in prices.columns}
+                
                 # Rééquilibrage partiel ou complet selon rebal_frac
                 if p.rebal_frac < 1.0:
                     # Rééquilibrage partiel : on ajuste les poids cibles
                     tw_partial = self._compute_partial_rebalance_weights(cw, tw, p.rebal_frac)
                     # Vérification que tw_partial est bien normalisé (déjà fait dans la fonction)
-                    c = broker.rebalance(t, tw_partial)
+                    c = broker.rebalance(t, tw_partial, slippage_map=slippage_map)
                     broker.mark_to_market(t, extra_cost=c, target_weights=tw)
                 else:
                     # Rééquilibrage complet
-                    c = broker.rebalance(t, tw)
+                    c = broker.rebalance(t, tw, slippage_map=slippage_map)
                     broker.mark_to_market(t, extra_cost=c, target_weights=tw)
                 self.last_rebalance_day = t
             else:
