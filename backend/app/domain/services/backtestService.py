@@ -41,7 +41,7 @@ class BacktestService:
         wallet = self.walletService.getWalletByUserId(userId)
 
         user = self.userRepo.get_by_id(userId)
-        favorite_platform = user.favorite_platform if user else "Binance"
+        favorite_platform = user.favorite_platform if (user and user.favorite_platform) else "Binance"
         fee_rate = get_fee_rate(favorite_platform)
         # Le slippage sera calculé par asset dans chaque stratégie selon la catégorie
         # On garde un slippage de fallback pour compatibilité mais il sera ignoré par les stratégies modernes
