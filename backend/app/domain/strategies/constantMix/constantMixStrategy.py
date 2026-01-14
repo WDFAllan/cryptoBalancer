@@ -3,8 +3,12 @@ from typing import Dict
 from app.domain.strategies.baseStrategy import BaseStrategy
 import pandas as pd
 from app.domain.strategies.tradingUtils.Broker import Broker, TradeCost
-from app.domain.strategies.tradingUtils.Utils import normalize_weights, wallet_items_to_holdings, \
-    compute_portfolio_value
+from app.domain.strategies.tradingUtils.Utils import (
+    normalize_weights, 
+    wallet_items_to_holdings, 
+    compute_portfolio_value,
+    compute_cagr
+)
 from app.domain.strategies.constantMix.constantMixParams import ConstantMixParams
 
 
@@ -73,10 +77,14 @@ class ConstantMixStrategy(BaseStrategy):
     def run(self, prices: pd.DataFrame, wallet: dict) -> pd.DataFrame:
         result_w = self._run_with_rebalance_mode(prices, wallet, "W")
         result_m = self._run_with_rebalance_mode(prices, wallet, "M")
-        value_w = (result_w["value"].iloc[-1] / result_w["value"].iloc[0])**(1/(len(prices)/365)) - 1
-        value_m = (result_m["value"].iloc[-1] / result_m["value"].iloc[0])**(1/(len(prices)/365)) - 1
-        best_mode = "W" if value_w >= value_m else "M"
-        best_df = result_w if value_w >= value_m else result_m
+        
+        # Calcul correct du CAGR en utilisant les dates réelles de l'index
+        # au lieu de len(prices)/365 qui ignore les weekends et jours fériés
+        cagr_w = compute_cagr(result_w["value"], use_index=True)
+        cagr_m = compute_cagr(result_m["value"], use_index=True)
+        
+        best_mode = "W" if cagr_w >= cagr_m else "M"
+        best_df = result_w if cagr_w >= cagr_m else result_m
         best_df.attrs['best_mode'] = best_mode
         return best_df
 

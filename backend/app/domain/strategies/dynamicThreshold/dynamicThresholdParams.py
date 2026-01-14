@@ -26,4 +26,7 @@ class DynamicThresholdParams:
     # Paramètres de rééquilibrage
     rebal_frac: float = 1.0  # Fraction de rééquilibrage (1.0 = complet, < 1.0 = partiel)
     cooldown_days: int = 5  # Délai minimum entre deux rééquilibrages (jours)
+    
+    # Plateforme pour calcul des frais et slippage par asset
+    favorite_platform: str = "Binance"
 

@@ -12,3 +12,4 @@ class ConstantMixParams:
     rebalance: str = "M"
     verbose: bool = False
     drift_threshold: float = 0
+    favorite_platform: str = "Binance"  # Plateforme pour calculer slippage par asset

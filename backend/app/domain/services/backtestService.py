@@ -43,9 +43,10 @@ class BacktestService:
         user = self.userRepo.get_by_id(userId)
         favorite_platform = user.favorite_platform if user else "Binance"
         fee_rate = get_fee_rate(favorite_platform)
-        # Exemple : slippage "majors" par défaut (personnaliser selon ta logique)
-        slippage_rate = get_slippage_rate(favorite_platform, "majors")
+        # Le slippage sera calculé par asset dans chaque stratégie selon la catégorie
+        # On garde un slippage de fallback pour compatibilité mais il sera ignoré par les stratégies modernes
+        slippage_rate = get_slippage_rate(favorite_platform, "majors")  # Fallback si stratégie ne supporte pas slippage_map
 
         runner_cls = StrategyFactory.create(strategy_name)
         runner = runner_cls()
-        return runner.run(prices_df, wallet, fee_rate=fee_rate, slippage=slippage_rate)
+        return runner.run(prices_df, wallet, fee_rate=fee_rate, slippage=slippage_rate, favorite_platform=favorite_platform)

@@ -75,46 +75,59 @@ class Broker:
         current_value = {a: self.holdings[a] * px[a] for a in self.assets}
         target_value  = {a: total_value * target_weights.get(a, 0.0) for a in self.assets}
 
-        trade_values = {a: target_value[a] - current_value[a] for a in self.assets}
-        # --- frais (calculés sur la valeur nominale, hors slippage) ---
-        cost = self.trade_cost.compute(trade_values)
+        trade_values_nominal = {a: target_value[a] - current_value[a] for a in self.assets}
 
+        # Calcul des quantités avec slippage
         trades_qty = {}
+        slippage_costs = {}  # Coût du slippage par asset
+        
         for a in self.assets:
-            dv = trade_values[a]  # valeur à acheter/vendre (en €)
+            dv_nominal = trade_values_nominal[a]  # valeur nominale à acheter/vendre (en €)
             p0 = float(px[a])
+            
             if p0 == 0 or not np.isfinite(p0):
                 trades_qty[a] = 0.0
+                slippage_costs[a] = 0.0
                 continue
 
-            if abs(dv) < 1e-12:
+            if abs(dv_nominal) < 1e-12:
                 trades_qty[a] = 0.0
+                slippage_costs[a] = 0.0
                 continue
 
             # Prix d'exécution avec slippage : achat => prix plus haut, vente => prix plus bas
             slip = slippage_map[a] if slippage_map and a in slippage_map else float(self.trade_cost.slippage)
-            if dv > 0:  # Achat
+            if dv_nominal > 0:  # Achat
                 p_exec = p0 * (1.0 + slip)
             else:  # Vente
                 p_exec = p0 * (1.0 - slip)
 
-            qty = dv / p_exec
+            # Quantité achetée/vendue
+            qty = dv_nominal / p_exec
             trades_qty[a] = qty
+            
+            # Coût du slippage : pour un trade de valeur V avec slippage s
+            # Le coût est V * s (que ce soit un achat ou une vente)
+            # Achat : on paye s% plus cher -> perte de s% de la valeur
+            # Vente : on reçoit s% moins -> perte de s% de la valeur
+            slippage_costs[a] = abs(dv_nominal) * slip
+
+        # --- Calcul des coûts totaux : frais d'exchange + coût du slippage ---
+        # Frais d'exchange (fee_rate sur la valeur du trade)
+        cost_fees = self.trade_cost.compute(trade_values_nominal)
+        
+        # Coût total du slippage (impact de marché)
+        cost_slippage = sum(slippage_costs.values())
+        
+        # Coût total = frais + slippage
+        cost = cost_fees + cost_slippage
 
         # --- applique les trades ---
         for a, q in trades_qty.items():
             self.holdings[a] += q
 
-        # --- paiement des frais : on les prélève sur un stable (USDT si présent)
-        pay_asset = "USDT" if "USDT" in self.assets else None
-        if pay_asset is not None and px[pay_asset] > 0:
-            self.holdings[pay_asset] -= cost / px[pay_asset]
-        else:
-            # fallback minimaliste : on prélève sur l’actif de plus grande valeur
-            # (évite la disparition des frais)
-            biggest = max(self.assets, key=lambda a: self.holdings[a] * px[a])
-            if px[biggest] > 0:
-                self.holdings[biggest] -= cost / px[biggest]
+        # --- paiement des frais : validation et prélèvement intelligent ---
+        self._pay_trading_fees(t, cost, px)
 
         if self.verbose:
             cw = self._current_weights(t)
@@ -134,7 +147,7 @@ class Broker:
             print(f"\n[{self.prices.index[t].date()}] Rééquilibrage")
             if actions: print("  Drift : " + "; ".join(actions))
             if trades_summary: print("  " + "; ".join(trades_summary))
-            print(f"  Coût total frais : {cost:.2f} €")
+            print(f"  Coût total : {cost:.2f} € (frais: {cost_fees:.2f}€ + slippage: {cost_slippage:.2f}€)")
 
         # ⬅️ on NE pousse plus la ligne d'historique ici : on laisse strategy.py appeler mark_to_market
         return float(cost)
@@ -145,3 +158,63 @@ class Broker:
         df = pd.DataFrame(self.history)
         df.set_index("date", inplace=True)
         return df
+
+    def _pay_trading_fees(self, t: int, cost: float, px: pd.Series) -> None:
+        """
+        Prélève les frais de trading sur le portefeuille avec validation.
+        
+        Stratégie de prélèvement :
+        1. Priorité : USDT si disponible et suffisant
+        2. Fallback : Actif avec la plus grande valeur
+        3. Si aucun actif n'a assez de valeur : répartition proportionnelle
+        4. Si capital total insuffisant : Exception (backtest invalide)
+        
+        Args:
+            t: Index temporel pour logging
+            cost: Montant des frais en devise de base (EUR)
+            px: Prix à l'instant t (pd.Series)
+        """
+        if cost <= 0:
+            return  # Pas de frais à payer
+        
+        # Vérifier que le capital total est suffisant
+        total_value = self._portfolio_value(t)
+        if total_value < cost:
+            raise ValueError(
+                f"[{self.prices.index[t].date()}] Capital insuffisant pour payer les frais. "
+                f"Frais: {cost:.2f}€, Capital: {total_value:.2f}€"
+            )
+        
+        # Stratégie 1 : Prélever sur USDT si présent et suffisant
+        pay_asset = "USDT" if "USDT" in self.assets else None
+        if pay_asset is not None and px[pay_asset] > 0:
+            asset_value = self.holdings[pay_asset] * px[pay_asset]
+            if asset_value >= cost:
+                # USDT a assez de valeur
+                self.holdings[pay_asset] -= cost / px[pay_asset]
+                return
+        
+        # Stratégie 2 : Prélever sur l'actif avec la plus grande valeur
+        asset_values = {a: self.holdings[a] * px[a] for a in self.assets if px[a] > 0}
+        if asset_values:
+            biggest = max(asset_values, key=asset_values.get)
+            if asset_values[biggest] >= cost:
+                # L'actif le plus gros a assez de valeur
+                self.holdings[biggest] -= cost / px[biggest]
+                return
+        
+        # Stratégie 3 : Répartition proportionnelle sur tous les actifs
+        # (aucun actif individuel n'a assez, mais le total oui)
+        for asset in self.assets:
+            if px[asset] > 0 and self.holdings[asset] > 0:
+                asset_value = self.holdings[asset] * px[asset]
+                # Prélever proportionnellement à la valeur de l'actif
+                fee_share = (asset_value / total_value) * cost
+                self.holdings[asset] -= fee_share / px[asset]
+        
+        # Validation finale : vérifier qu'aucun holding n'est devenu négatif
+        for asset in self.assets:
+            if self.holdings[asset] < -1e-10:  # Tolérance pour erreurs d'arrondi
+                if self.verbose:
+                    print(f"⚠️ Warning: Holding négatif détecté pour {asset}: {self.holdings[asset]:.8f}")
+                self.holdings[asset] = 0.0  # Correction pour éviter holdings négatifs
