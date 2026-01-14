@@ -73,6 +73,7 @@ class DynamicThresholdStrategy(BaseStrategy):
                     drifts[asset] = drift
 
             # Calcul des seuils par actif (thr[a])
+            from app.tradingutils.drift_threshold import get_drift_threshold
             thresholds = {}
             current_date = prices.index[t]
             
@@ -81,17 +82,17 @@ class DynamicThresholdStrategy(BaseStrategy):
                     # Seuil fixe pour les actifs stables
                     thresholds[asset] = p.stable_threshold
                 else:
-                    # Seuil dynamique basé sur la volatilité de l'actif
-                    # Utiliser l'index pour récupérer la volatilité à la date t
+                    # D'abord : check si drift threshold dynamique par catégorie/plateforme
+                    candidate_thr = get_drift_threshold(asset, getattr(p, 'favorite_platform', None))
+                    # Option : garder la logique volatilité, choisir le max des 2 si souhaité
                     if current_date in vol_ann.index and asset in vol_ann.columns:
                         vol_a = vol_ann.loc[current_date, asset]
                     else:
                         vol_a = 0.0
                     
-                    # Formule: thr[a] = clamp(min_th + k * vol[a], min_th, max_th)
-                    thr_a = p.min_th + p.k * vol_a
-                    # Clamp entre min_th et max_th
-                    thresholds[asset] = max(p.min_th, min(p.max_th, thr_a))
+                    # Option : threshold final = max (catégorie, formule volatilité classique)
+                    thr_vol = max(p.min_th, min(p.max_th, p.min_th + p.k * vol_a))
+                    thresholds[asset] = max(candidate_thr, thr_vol)
 
             # Vérification des conditions de rééquilibrage
             # Déclenchement si au moins un actif dépasse son seuil
