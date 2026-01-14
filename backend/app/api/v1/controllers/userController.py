@@ -28,6 +28,8 @@ def update_favorite_platform(user_id: int, favorite_platform: str, service: User
         if not updated_user:
             raise HTTPException(status_code=404, detail="User not found")
         return updated_user
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -79,7 +79,6 @@ class Broker:
 
         # Calcul des quantités avec slippage
         trades_qty = {}
-        slippage_costs = {}  # Coût du slippage par asset
         
         for a in self.assets:
             dv_nominal = trade_values_nominal[a]  # valeur nominale à acheter/vendre (en €)
@@ -87,40 +86,29 @@ class Broker:
             
             if p0 == 0 or not np.isfinite(p0):
                 trades_qty[a] = 0.0
-                slippage_costs[a] = 0.0
                 continue
 
             if abs(dv_nominal) < 1e-12:
                 trades_qty[a] = 0.0
-                slippage_costs[a] = 0.0
                 continue
 
             # Prix d'exécution avec slippage : achat => prix plus haut, vente => prix plus bas
+            # Le slippage est déjà pris en compte via le prix d'exécution défavorable
+            # (on achète moins de quantité pour le même montant, ou on reçoit moins en vendant)
             slip = slippage_map[a] if slippage_map and a in slippage_map else float(self.trade_cost.slippage)
             if dv_nominal > 0:  # Achat
                 p_exec = p0 * (1.0 + slip)
             else:  # Vente
                 p_exec = p0 * (1.0 - slip)
 
-            # Quantité achetée/vendue
+            # Quantité achetée/vendue (le slippage est déjà intégré dans p_exec)
             qty = dv_nominal / p_exec
             trades_qty[a] = qty
-            
-            # Coût du slippage : pour un trade de valeur V avec slippage s
-            # Le coût est V * s (que ce soit un achat ou une vente)
-            # Achat : on paye s% plus cher -> perte de s% de la valeur
-            # Vente : on reçoit s% moins -> perte de s% de la valeur
-            slippage_costs[a] = abs(dv_nominal) * slip
 
-        # --- Calcul des coûts totaux : frais d'exchange + coût du slippage ---
-        # Frais d'exchange (fee_rate sur la valeur du trade)
-        cost_fees = self.trade_cost.compute(trade_values_nominal)
-        
-        # Coût total du slippage (impact de marché)
-        cost_slippage = sum(slippage_costs.values())
-        
-        # Coût total = frais + slippage
-        cost = cost_fees + cost_slippage
+        # --- Calcul des coûts : uniquement frais d'exchange ---
+        # Note : Le slippage n'est PAS un coût à déduire séparément, 
+        # il est déjà comptabilisé via le prix d'exécution moins favorable
+        cost = self.trade_cost.compute(trade_values_nominal)
 
         # --- applique les trades ---
         for a, q in trades_qty.items():
@@ -147,7 +135,7 @@ class Broker:
             print(f"\n[{self.prices.index[t].date()}] Rééquilibrage")
             if actions: print("  Drift : " + "; ".join(actions))
             if trades_summary: print("  " + "; ".join(trades_summary))
-            print(f"  Coût total : {cost:.2f} € (frais: {cost_fees:.2f}€ + slippage: {cost_slippage:.2f}€)")
+            print(f"  Frais de trading : {cost:.2f} € (slippage déjà intégré dans les prix d'exécution)")
 
         # ⬅️ on NE pousse plus la ligne d'historique ici : on laisse strategy.py appeler mark_to_market
         return float(cost)
