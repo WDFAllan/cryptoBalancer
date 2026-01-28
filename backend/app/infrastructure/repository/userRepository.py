@@ -55,7 +55,7 @@ class UserRepository(IUserPort):
         entity = UserTable(
             email=user.email,
             username=user.username,
-            favorite_platform=user.favorite_platform
+            favorite_platform="Binance"
         )
         self.db.add(entity)
         self.db.commit()
