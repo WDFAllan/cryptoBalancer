@@ -8,6 +8,7 @@ from app.api.v1.controllers.walletController import router as wallet_router
 from app.api.v1.controllers.candleController import router as candle_router
 from app.api.v1.controllers.userController import router as user_router
 from app.api.v1.controllers.backtestController import router as backtest_router
+from app.api.v1.controllers.portfolioValueController import router as portfolio_value_router
 from starlette.middleware.sessions import SessionMiddleware
 
 
@@ -45,5 +46,6 @@ app.include_router(google_router, prefix="/api/v1")
 app.include_router(wallet_router, prefix="/api/v1")
 app.include_router(candle_router, prefix="/api/v1")
 app.include_router(backtest_router, prefix="/api/v1")
+app.include_router(portfolio_value_router, prefix="/api/v1")
 
 # Lifespan handler takes care of startup initialization (DB + scheduler)
