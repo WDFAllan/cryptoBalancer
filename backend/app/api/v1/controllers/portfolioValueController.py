@@ -10,6 +10,9 @@ from app.domain.services.cryptoService import CryptoService
 from app.infrastructure.repository.portfolioValueRepository import PortfolioValueRepository
 from app.infrastructure.repository.walletRepository import WalletRepository
 from app.infrastructure.repository.cryptoRepository import CryptoRepository
+from app.infrastructure.repository.candle.dailyCandleRepository import dailyCandleRepository
+from app.infrastructure.adapters.binanceCandleAdapter import binanceCandleAdapter
+from app.domain.services.candle.dailyCandleService import dailyCandleService
 
 router = APIRouter(prefix="/portfolio-value", tags=["Portfolio Value"])
 
@@ -18,7 +21,9 @@ def portfolio_value_service(db: Session = Depends(get_db)) -> PortfolioValueServ
     portfolioValueRepo = PortfolioValueRepository(db)
     walletRepo = WalletRepository(db)
     cryptoService = CryptoService(CryptoRepository())
-    return PortfolioValueService(portfolioValueRepo, walletRepo, cryptoService)
+    candleService = dailyCandleService(dailyCandleRepository(db), CryptoRepository(), binanceCandleAdapter())
+    return PortfolioValueService(portfolioValueRepo, walletRepo, cryptoService, candleService)
+
 
 
 @router.post("/{userId}/calculate", response_model=PortfolioValue)
@@ -83,3 +88,15 @@ def getLatestPortfolioValue(
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
 
+@router.get("/{userId}/daily", response_model=List[PortfolioValue])
+async def getDailyPortfolioValue(
+    userId: int,
+    service: PortfolioValueService = Depends(portfolio_value_service)
+):
+    """
+    Récupère les valeurs quotidiennes du portefeuille pour un utilisateur.
+    """
+    try:
+        return await service.calculateDailyPortfolioValue(userId)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))

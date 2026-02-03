@@ -1,18 +1,21 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 from app.domain.models.portfolioValue import PortfolioValue
 from app.domain.port.portfolioValuePort import IPortfolioValuePort
 from app.domain.port.walletPort import IWalletPort
 from app.domain.services.cryptoService import CryptoService
+from app.domain.services.candle.dailyCandleService import dailyCandleService
+
 
 
 class PortfolioValueService:
 
-    def __init__(self, portfolioValueRepo: IPortfolioValuePort, walletRepo: IWalletPort, cryptoService: CryptoService):
+    def __init__(self, portfolioValueRepo: IPortfolioValuePort, walletRepo: IWalletPort, cryptoService: CryptoService, candleService: dailyCandleService):
         self.portfolioValueRepo = portfolioValueRepo
         self.walletRepo = walletRepo
         self.cryptoService = cryptoService
+        self.candleService = candleService
 
     async def calculateAndSavePortfolioValue(self, userId: int, date: datetime | None = None) -> PortfolioValue:
         """
@@ -58,3 +61,50 @@ class PortfolioValueService:
         """
         return self.portfolioValueRepo.getLatestByUserId(userId)
 
+    async def calculateDailyPortfolioValue(self, userId: int) -> List[PortfolioValue]:
+
+        wallet = self.walletRepo.getWalletByUserId(userId)
+        if not wallet:
+            raise Exception(f"No wallet found for user {userId}")
+
+        startDate = datetime.now(timezone.utc) - timedelta(days=729)
+        endDate = datetime.now(timezone.utc)
+
+        # 1️⃣ Charger toutes les candles par crypto
+        candles_by_crypto: Dict[str, Dict[datetime, float]] = {}
+
+        for item in wallet.items:
+            candles = self.candleService.getCandlesBySymbol(item.symbol)
+
+            # dict[date -> close]
+            candles_by_crypto[item.symbol] = {
+                candle.open_time.date(): candle.close
+                for candle in candles
+            }
+        
+        # 2️⃣ Calcul jour par jour
+        dailyValues: List[PortfolioValue] = []
+        currentDate = startDate.date()
+        endDateOnly = endDate.date()
+
+        while currentDate <= endDateOnly:
+            totalValue = 0.0
+            for item in wallet.items:
+                
+                price = candles_by_crypto[item.symbol].get(currentDate)
+                
+                if price is not None:
+                    totalValue += item.amount * price
+
+            dailyValues.append(
+                PortfolioValue(
+                    id=None,
+                    userId=userId,
+                    date=datetime.combine(currentDate, datetime.min.time(), tzinfo=timezone.utc),
+                    totalValue=totalValue
+                )
+            )
+
+            currentDate += timedelta(days=1)
+
+        return dailyValues

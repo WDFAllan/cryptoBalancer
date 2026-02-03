@@ -13,6 +13,7 @@ from app.infrastructure.models.wallet.walletItemTable import WalletItemTable
 from app.infrastructure.models.candle.candleTable import CandleTable
 from app.infrastructure.models.candle.candleThreeMTable import CandleThreeMTable
 from app.infrastructure.models.portfolioValueTable import PortfolioValueTable
+from app.infrastructure.models.wallet.walletTransactionTable import WalletTransactionTable
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -8,5 +8,4 @@ class PortfolioValue:
     userId: int
     date: datetime
     totalValue: float
-    createdAt: datetime | None = None
 
