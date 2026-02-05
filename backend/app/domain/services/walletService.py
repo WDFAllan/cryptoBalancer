@@ -5,17 +5,17 @@ from app.domain.port.walletPort import IWalletPort
 
 class WalletService:
 
-    def __init__(self, walletRepo:IWalletPort):
+    def __init__(self, walletRepo: IWalletPort):
         self.walletRepo = walletRepo
 
-    def createWalletForUser(self, user_id: int) -> Wallet:
+    def createWalletForUser(self, user_id: int, strategy: str | None = None) -> Wallet:
         if user_id <= 0:
             raise ValueError("user_id must be > 0")
 
         existing_wallet = self.walletRepo.getWalletByUserId(user_id)
         if existing_wallet:
             raise Exception(f"User {user_id} already has a wallet.")
-        return self.walletRepo.createWallet(user_id)
+        return self.walletRepo.createWallet(user_id, strategy)
 
 
     def addItemToWallet(self, user_id: int, symbol: str, amount: float) -> Wallet:
@@ -49,3 +49,11 @@ class WalletService:
         if amount < 0:
             raise ValueError("amount must be >= 0")
         return self.walletRepo.updateItemAmount(user_id, symbol, amount)
+
+    def updateWalletStrategy(self, user_id: int, strategy: str | None) -> Wallet:
+        if user_id <= 0:
+            raise ValueError("user_id must be > 0")
+        # On autorise None pour effacer la stratégie, mais on empêche les strings vides
+        if isinstance(strategy, str) and strategy.strip() == "":
+            raise ValueError("strategy cannot be empty")
+        return self.walletRepo.updateStrategy(user_id, strategy)

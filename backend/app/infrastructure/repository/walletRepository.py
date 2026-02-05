@@ -11,14 +11,14 @@ class WalletRepository(IWalletPort):
     def __init__(self, db: Session):
         self.db = db
 
-    def createWallet(self, userId: int) -> Wallet:
+    def createWallet(self, userId: int, strategy: str | None = None) -> Wallet:
 
-        wallet_table = WalletTable(userId=userId)
+        wallet_table = WalletTable(userId=userId, strategy=strategy)
         self.db.add(wallet_table)
         self.db.commit()
         self.db.refresh(wallet_table)
 
-        return Wallet(id=None,userId=userId, items=[])
+        return Wallet(id=wallet_table.id, userId=userId, strategy=wallet_table.strategy, items=[])
 
     def addToWallet(self, userId: int, walletItem: WalletItem):
         wallet_table = (
@@ -54,7 +54,7 @@ class WalletRepository(IWalletPort):
             WalletItem(id=i.id, symbol=i.symbol, amount=i.amount)
             for i in wallet_table.items
         ]
-        return Wallet(id=None,userId=wallet_table.userId, items=items)
+        return Wallet(id=wallet_table.id, userId=wallet_table.userId, strategy=wallet_table.strategy, items=items)
 
 
 
@@ -72,7 +72,7 @@ class WalletRepository(IWalletPort):
             for i in wallet_table.items
         ]
 
-        return Wallet(id=None,userId=userId, items=items)
+        return Wallet(id=wallet_table.id, userId=userId, strategy=wallet_table.strategy, items=items)
 
     def deleteWallet(self, userId: int) -> None:
         wallet_table = (
@@ -117,7 +117,7 @@ class WalletRepository(IWalletPort):
             WalletItem(id=i.id, symbol=i.symbol, amount=i.amount)
             for i in wallet_table.items
         ]
-        return Wallet(id=None, userId=wallet_table.userId, items=items)
+        return Wallet(id=wallet_table.id, userId=wallet_table.userId, strategy=wallet_table.strategy, items=items)
 
     def updateItemAmount(self, userId: int, symbol: str, amount: float) -> Wallet:
         wallet_table = (
@@ -148,4 +148,24 @@ class WalletRepository(IWalletPort):
             WalletItem(id=i.id, symbol=i.symbol, amount=i.amount)
             for i in wallet_table.items
         ]
-        return Wallet(id=None, userId=wallet_table.userId, items=items)
+        return Wallet(id=wallet_table.id, userId=wallet_table.userId, strategy=wallet_table.strategy, items=items)
+
+    def updateStrategy(self, userId: int, strategy: str | None) -> Wallet:
+        wallet_table = (
+            self.db.query(WalletTable)
+            .filter(WalletTable.userId == userId)
+            .first()
+        )
+
+        if not wallet_table:
+            raise Exception(f"No wallet found for user {userId}")
+
+        wallet_table.strategy = strategy
+        self.db.commit()
+        self.db.refresh(wallet_table)
+
+        items = [
+            WalletItem(id=i.id, symbol=i.symbol, amount=i.amount)
+            for i in wallet_table.items
+        ]
+        return Wallet(id=wallet_table.id, userId=wallet_table.userId, strategy=wallet_table.strategy, items=items)

@@ -14,9 +14,9 @@ def wallet_service(db:Session = Depends(get_db)) -> WalletService:
 
 
 @router.post("/{userId}/create", response_model=Wallet)
-def createWallet(userId: int, service: WalletService = Depends(wallet_service)):
+def createWallet(userId: int, strategy: str | None = None, service: WalletService = Depends(wallet_service)):
     try:
-        return service.createWalletForUser(userId)
+        return service.createWalletForUser(userId, strategy)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -62,6 +62,17 @@ def removeItemFromWallet(userId: int, symbol: str, service: WalletService = Depe
 def updateItemAmount(userId: int, symbol: str, amount: float, service: WalletService = Depends(wallet_service)):
     try:
         return service.updateItemAmount(userId, symbol, amount)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.patch("/{userId}/strategy", response_model=Wallet)
+def updateWalletStrategy(userId: int, strategy: str | None, service: WalletService = Depends(wallet_service)):
+    """
+    Met à jour la stratégie associée au wallet d'un utilisateur.
+    """
+    try:
+        return service.updateWalletStrategy(userId, strategy)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

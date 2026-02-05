@@ -7,7 +7,7 @@ from app.domain.models.wallet.walletItem import WalletItem
 class IWalletPort(ABC):
 
     @abstractmethod
-    def createWallet(self,userId:int) -> Wallet:
+    def createWallet(self, userId: int, strategy: str | None = None) -> Wallet:
         pass
 
     @abstractmethod
@@ -28,4 +28,8 @@ class IWalletPort(ABC):
 
     @abstractmethod
     def updateItemAmount(self, userId: int, symbol: str, amount: float) -> Wallet:
+        pass
+
+    @abstractmethod
+    def updateStrategy(self, userId: int, strategy: str | None) -> Wallet:
         pass
