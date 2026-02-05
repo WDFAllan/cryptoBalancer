@@ -85,7 +85,18 @@ class ConstantMixStrategy(BaseStrategy):
         
         best_mode = "W" if cagr_w >= cagr_m else "M"
         best_df = result_w if cagr_w >= cagr_m else result_m
-        best_df.attrs['best_mode'] = best_mode
+        best_df.attrs["strategy"] = "CONSTANT_MIX"
+        best_df.attrs["best_mode"] = best_mode
+
+        # S'assurer que toutes les colonnes existent
+        required_cols = [
+            "cost", "max_drift", "l1_drift"
+        ]
+
+        for col in required_cols:
+            if col not in best_df.columns:
+                best_df[col] = 0.0
+
         return best_df
 
     def target_weights(self, t: int, prices: pd.DataFrame) -> Dict[str, float]:

@@ -138,7 +138,17 @@ class DynamicThresholdStrategy(BaseStrategy):
             else:
                 broker.mark_to_market(t, extra_cost=0.0, target_weights=tw)
 
-        return broker.get_history()
+        # Format de retour homogène avec les autres stratégies
+        hist = broker.get_history()
+        hist.attrs["strategy"] = "DYNAMIC_THRESHOLD"
+
+        # S'assurer que les colonnes clés existent (comme pour ConstantMix / Hold)
+        required_cols = ["cost", "max_drift", "l1_drift"]
+        for col in required_cols:
+            if col not in hist.columns:
+                hist[col] = 0.0
+
+        return hist
 
     def target_weights(self, t: int, prices: pd.DataFrame) -> Dict[str, float]:
         """Renvoie les poids cibles à la date t (identiques chaque jour, filtrés aux colonnes disponibles)."""

@@ -15,7 +15,23 @@ class holdStrategy(BaseStrategy):
 
         # Valeur du portefeuille au fil du temps
         values = (prices[list(quantities.keys())] * pd.Series(quantities)).sum(axis=1)
-        df = pd.DataFrame({"value": values})
+        df = pd.DataFrame({
+            "value": values,
+            "cost": 0.0,
+            "max_drift": 0.0,
+            "l1_drift": 0.0,
+        })
+
+        # Colonnes alignées avec les stratégies basées sur Broker
+        # (pour avoir un format de retour homogène)
+        df["weights"] = None
+        df["trades"] = None
+
+        # Colonnes de positions (alignées avec constant mix)
+        for asset in prices.columns:
+            df[f"pos_{asset}"] = quantities.get(asset, 0.0)
+
         df.index.name = "date"
-        # Optionnel : appliquer ici fees/slippage si pertinent
+        df.attrs["strategy"] = "HOLD"
         return df
+

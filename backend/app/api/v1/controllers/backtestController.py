@@ -28,14 +28,12 @@ def run_any_strategy(
         userId:int,
         service = Depends(backtestService)):
     result_df = service.runStrategy(strategy_name, userId)
-    if(strategy_name != "constant_mix"):
-       response = {
-            "data": result_df.to_dict(orient="records")
-        } 
-    else:
-        response = {
-            "meilleur": result_df.attrs.get('best_mode'),
-            "data": result_df.to_dict(orient="records")
-        }
+
+    response = {
+        "strategy": result_df.attrs.get("strategy"),
+        "meilleur": result_df.attrs.get("best_mode"),
+        "data": result_df.reset_index().to_dict(orient="records")
+    }
+
     return response
 
