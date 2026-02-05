@@ -84,6 +84,7 @@ class PortfolioValueService:
         
         # 2️⃣ Calcul jour par jour
         dailyValues: List[PortfolioValue] = []
+        generated_id = 1
         currentDate = startDate.date()
         endDateOnly = endDate.date()
 
@@ -98,12 +99,13 @@ class PortfolioValueService:
 
             dailyValues.append(
                 PortfolioValue(
-                    id=None,
+                    id=generated_id,
                     userId=userId,
                     date=datetime.combine(currentDate, datetime.min.time(), tzinfo=timezone.utc),
                     totalValue=totalValue
                 )
             )
+            generated_id += 1
 
             currentDate += timedelta(days=1)
 
