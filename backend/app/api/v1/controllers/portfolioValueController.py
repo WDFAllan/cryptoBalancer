@@ -88,7 +88,7 @@ def getLatestPortfolioValue(
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-@router.get("/{userId}/daily", response_model=List[PortfolioValue])
+@router.get("/{userId}/dailyList", response_model=List[PortfolioValue])
 async def getListDailyPortfolioValue(
     userId: int,
     service: PortfolioValueService = Depends(portfolio_value_service)
